@@ -110,7 +110,7 @@ export default function MusicPreviewPage() {
             <div
                 key={skeletonKey}
                 className={`absolute w-12 transition-opacity duration-500 ${
-                    isPlaying ? "animate-dance" : hasEnded ? "skeleton-still" : "hidden"
+                    isPlaying ? "preview-dance" : hasEnded ? "skeleton-still" : "hidden"
                 }`}
                 style={{
                     left: `calc(${(progress / MAX_PREVIEW) * 100}% - 20px)`,
@@ -119,7 +119,7 @@ export default function MusicPreviewPage() {
                     transition: "left 1s linear",
                 }}
                 >
-                <Image src={skeletonImg} alt="Skeleton" className="preview-dance" />
+                <Image src={skeletonImg} alt="Skeleton" />
             </div>
         </div>
         )}
