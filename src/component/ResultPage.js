@@ -9,8 +9,8 @@ export default function ResultPage() {
   return (
     <div
       className="w-screen h-screen bg-cover bg-center flex flex-col items-center justify-center"
-      style={{ backgroundImage: `url(${startImg2.src})` }}>
-      
+      style={{ backgroundImage: `url(${startImg2.src})` }}
+    >
       <h1 className="text-3xl mb-6 text-white">🎉 FINISHED！</h1>
       <div className="text-white text-2xl space-y-3">
         <p>Score：{score}</p>

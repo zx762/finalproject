@@ -21,57 +21,73 @@ const ARROW_IMAGES = {
 
 const DIRECTIONS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
 const ARROW_SPEED = 200;
-const HIT_ZONE_X = 180; // ← 根據你的框框位置微調
-const MUSIC_DURATION = 20;
+const HIT_ZONE_X = 180;
+
+const chart = [
+  { time: 0.5 }, { time: 1.1 }, { time: 1.9 }, { time: 2.4 }, { time: 3.0 },
+  { time: 4.0 }, { time: 4.6 }, { time: 5.3 }, { time: 6.0 }, { time: 6.5 },
+  { time: 7.2 }, { time: 8.1 }, { time: 8.9 }, { time: 9.4 }, { time: 10.1 },
+  { time: 11.2 }, { time: 11.9 }, { time: 12.4 }, { time: 13.2 }, { time: 13.9 },
+  { time: 15.1 }, { time: 15.9 }, { time: 16.6 }, { time: 17.3 }, { time: 17.9 },
+  { time: 19.0 }, { time: 19.6 }, { time: 20.3 }, { time: 21.2 }, { time: 21.8 },
+  { time: 23.0 }, { time: 23.6 }, { time: 24.4 }, { time: 25.2 }, { time: 25.9 },
+  { time: 27.0 }, { time: 28.1 }, { time: 29.0 }, { time: 30.0 }, { time: 31.0 },
+  { time: 32.5 }, { time: 34.0 }, { time: 35.5 },
+];
 
 export default function GamePage() {
-  const updateState = useStore((state) => state.updateState);
-  const updateScore = useStore((state) => state.updateScore);
-  const updateMaxCombo = useStore((state) => state.updateMaxCombo);
-  const updateAccuracy = useStore((state) => state.updateAccuracy);
+  const updateState = useStore((s) => s.updateState);
+  const {
+    score,
+    maxCombo,
+    hits,
+    total,
+    updateScore,
+    updateMaxCombo,
+    updateAccuracy,
+    updateHits,
+    updateTotal,
+  } = useStore();
 
-  const [arrows, setArrows] = useState([]);
-  const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
-  const [maxCombo, setMaxComboLocal] = useState(0);
-  const [hits, setHits] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [skeletonJump, setSkeletonJump] = useState(false);
   const [comboCount, setComboCount] = useState(0);
+  const [showComboText, setShowComboText] = useState(false);
+  const [showMissText, setShowMissText] = useState(false);
+  const [skeletonJump, setSkeletonJump] = useState(false);
+  const [arrows, setArrows] = useState([]);
 
   const arrowIdRef = useRef(0);
   const requestRef = useRef(null);
   const lastTimeRef = useRef(null);
   const audioRef = useRef(null);
-  const intervalRef = useRef(null);
-
-  const [showComboText, setShowComboText] = useState(false);
-  const [showMissText, setShowMissText] = useState(false);
-
 
   useEffect(() => {
     audioRef.current.play();
-
-    intervalRef.current = setInterval(() => {
-      const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
-      setArrows((prev) => [
-        ...prev,
-        {
+  
+    const arrowTimers = chart.map((note, index) =>
+      setTimeout(() => {
+        const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
+        const newArrow = {
           id: arrowIdRef.current++,
           direction,
           left: window.innerWidth + 50,
-        },
-      ]);
-      setTotal((t) => t + 1);
-    }, 500);
-
-    const timeout = setTimeout(() => {
+        };
+  
+        setArrows((prev) => [...prev, newArrow]);
+  
+        updateTotal(useStore.getState().total + 1);
+      }, note.time * 1000)
+    );
+  
+    // 結束遊戲（最後一筆 + 0.3 秒緩衝）
+    const endTime = chart[chart.length - 1].time + 0.3;
+    const endTimer = setTimeout(() => {
       handleEnd();
-    }, MUSIC_DURATION * 1000);
-
+    }, endTime * 1000);
+  
     return () => {
-      clearInterval(intervalRef.current);
-      clearTimeout(timeout);
+      arrowTimers.forEach(clearTimeout);
+      clearTimeout(endTimer);
     };
   }, []);
 
@@ -91,7 +107,7 @@ export default function GamePage() {
             ...arrow,
             left: arrow.left - ARROW_SPEED * deltaTime,
           }))
-          .filter((arrow) => arrow.left > 0)
+          .filter((arrow) => arrow.left > -50)
       );
 
       requestRef.current = requestAnimationFrame(animate);
@@ -114,15 +130,12 @@ export default function GamePage() {
       if (target) {
         // 命中
         setArrows((prev) => prev.filter((a) => a.id !== target.id));
-        const newScore = score + 100;
-        setScore(newScore);
-        setHits((h) => h + 1);
+        updateScore(useStore.getState().score + 100);
+        updateHits(useStore.getState().hits + 1);
         const newCombo = combo + 1;
         setCombo(newCombo);
         setComboCount(newCombo);
-        if (newCombo > maxCombo) {
-          setMaxComboLocal(newCombo);
-        }
+        if (newCombo > maxCombo) updateMaxCombo(newCombo);
         setSkeletonJump(true);
         setTimeout(() => setSkeletonJump(false), 200);
         setShowComboText(true);
@@ -138,50 +151,26 @@ export default function GamePage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [arrows, maxCombo]);
+  }, [arrows, combo, maxCombo]);
 
   const handleEnd = () => {
-        const acc = Math.round((hits / total) * 100 || 0);
-        updateScore(score);         // ✅ 同步 store
-        updateMaxCombo(maxCombo);   // ✅ 同步 store
-        updateAccuracy(acc);        // ✅ 同步 store
-        updateState(2);             // 跳轉 result 頁
+    const acc = Math.round((hits / total) * 100 || 0);
+    updateAccuracy(acc);
+    updateState(2);
   };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
-      <Image
-            src={backgroundImg}
-            alt="background"
-            className="absolute w-full h-full object-cover z-0"
-      />
+      <Image src={backgroundImg} alt="bg" className="absolute w-full h-full object-cover z-0" />
 
       {/* 傳送帶 */}
       <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[80%] h-32 flex items-center justify-center z-10">
-        <Image
-          src={conveyor}
-          alt="conveyor"
-          className="absolute w-full h-full object-contain z-[-1]"
-        />
+        <Image src={conveyor} alt="conveyor" className="absolute w-full h-full object-contain z-[-1]" />
         <div
           className="absolute left-[180px] w-16 h-16 border-4 border-white rounded"
           style={{ transform: "translateX(-50%)" }}
         />
       </div>
-
-        {/* Combo 效果，帶次數 */}
-        {showComboText && (
-        <div className="absolute top-[30%] left-1/2 transform -translate-x-1/2 text-yellow-300 text-4xl font-extrabold animate-combo-glow z-50">
-            COMBO X {comboCount}
-        </div>
-        )}
-
-        {/* Miss 提示效果 */}
-        {showMissText && (
-        <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 text-red-500 text-3xl font-bold animate-miss-blink z-50">
-            MISS
-        </div>
-        )}
 
       {/* 骷髏角色 */}
       <div className="absolute bottom-56 left-[100px] z-10">
@@ -205,14 +194,27 @@ export default function GamePage() {
         />
       ))}
 
+      {showComboText && (
+        <div className="absolute top-[30%] left-1/2 transform -translate-x-1/2 text-yellow-300 text-4xl font-extrabold animate-combo-glow z-50">
+          COMBO X {comboCount}
+        </div>
+      )}
+
+      {showMissText && (
+        <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 text-red-500 text-3xl font-bold animate-miss-blink z-50">
+          MISS
+        </div>
+      )}
+
       <div className="absolute top-6 left-6 text-white text-xl z-20">
-            Score：{score}
+        Score：{score}
       </div>
 
       <button
         onClick={() => updateState(0)}
-        className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded z-20">
-            Quit
+        className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded z-20"
+      >
+        Quit
       </button>
 
       <audio ref={audioRef} src="/1.game/Remember Me.mp3" />

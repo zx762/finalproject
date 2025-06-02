@@ -6,7 +6,7 @@ import skeletonImg from "@/../public/0.start/骷髏_白.png";
 import { useState, useEffect, useRef } from "react";
 import { useStore } from "@/app/store/store";
 
-const MAX_PREVIEW = 20; // 20秒
+const MAX_PREVIEW = 10; // 10秒
 
 export default function MusicPreviewPage() {
   const audioRef = useRef(null);
@@ -96,7 +96,7 @@ export default function MusicPreviewPage() {
             ? "Preview Ended"
             : isPlaying
             ? `Playing：${countdown}s`
-            : "Play 20s Preview"}
+            : "Play 10s Preview"}
         </button>
 
 
