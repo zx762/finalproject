@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import startImg from "@/../public/0.start/首頁.png";
-import { useState } from "react";
 import { useStore } from "@/app/store/store";
 
 export default function StartPage() {
@@ -32,6 +31,13 @@ export default function StartPage() {
         className="pixel-button mt-4 bg-[#ffcc00]"
       >
         Music Preview
+      </button>
+
+      <button
+        onClick={() => updateState(0.75)}
+        className="pixel-button mt-4 bg-[#ffcc00]"
+      >
+        How to Play
       </button>
     </div>
   );

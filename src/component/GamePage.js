@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/app/store/store";
 
 import backgroundImg from "@/../public/1.game/BACKGROUND.png";
+import backgroundImg2 from "@/../public/1.game/背景新.png";
 import subjectImg from "@/../public/1.game/SUBJECT.png";
 import arrowUp from "@/../public/1.game/黃上.png";
 import arrowDown from "@/../public/1.game/綠下.png";
@@ -45,6 +46,7 @@ export default function GamePage() {
     updateMaxCombo,
     updateAccuracy,
     updateHits,
+    updateMisses,
     updateTotal,
   } = useStore();
 
@@ -54,11 +56,13 @@ export default function GamePage() {
   const [showMissText, setShowMissText] = useState(false);
   const [skeletonJump, setSkeletonJump] = useState(false);
   const [arrows, setArrows] = useState([]);
+  const state = useStore((s) => s.state);
 
   const arrowIdRef = useRef(0);
   const requestRef = useRef(null);
   const lastTimeRef = useRef(null);
   const audioRef = useRef(null);
+  const reset = useStore((s) => s.reset);
 
   useEffect(() => {
     audioRef.current.play();
@@ -98,14 +102,23 @@ export default function GamePage() {
       const deltaTime = (time - lastTimeRef.current) / 1000;
       lastTimeRef.current = time;
 
-      setArrows((prev) =>
-        prev
-          .map((arrow) => ({
-            ...arrow,
-            left: arrow.left - ARROW_SPEED * deltaTime,
-          }))
-          .filter((arrow) => arrow.left > -50)
-      );
+      setArrows((prev) => {
+        const newArrows = [];
+        for (const arrow of prev) {
+          const newLeft = arrow.left - ARROW_SPEED * deltaTime;
+          if (newLeft <= -50) {
+            // ❌ 錯過箭頭
+            setCombo(0);
+            setComboCount(0);
+            updateMisses();
+            setShowMissText(true);
+            setTimeout(() => setShowMissText(false), 300);
+            continue; // 不保留這個箭頭（被移除）
+          }
+          newArrows.push({ ...arrow, left: newLeft });
+        }
+        return newArrows;
+      });
 
       requestRef.current = requestAnimationFrame(animate);
     };
@@ -117,33 +130,40 @@ export default function GamePage() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!DIRECTIONS.includes(e.key)) return;
-
+  
       const target = arrows.find(
         (arrow) =>
           arrow.direction === e.key &&
           Math.abs(arrow.left - HIT_ZONE_X) < 40
       );
-
+  
       if (target) {
         setArrows((prev) => prev.filter((a) => a.id !== target.id));
         updateScore(useStore.getState().score + 100);
         updateHits();
+  
         const newCombo = combo + 1;
         setCombo(newCombo);
         setComboCount(newCombo);
+  
         if (newCombo > maxCombo) updateMaxCombo(newCombo);
+  
         setSkeletonJump(true);
         setTimeout(() => setSkeletonJump(false), 200);
-        setShowComboText(true);
-        setTimeout(() => setShowComboText(false), 500);
+  
+        if (newCombo > 0) {
+          setShowComboText(true);
+          setTimeout(() => setShowComboText(false), 500);
+        }
       } else {
         setCombo(0);
         setComboCount(0);
+        updateMisses();
         setShowMissText(true);
         setTimeout(() => setShowMissText(false), 300);
       }
     };
-
+  
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [arrows, combo, maxCombo]);
@@ -157,11 +177,11 @@ export default function GamePage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
-      <Image src={backgroundImg} alt="bg" className="absolute w-full h-full object-cover z-0" />
+      <Image src={backgroundImg2} alt="bg" className="absolute w-full h-full object-cover z-0" />
 
       {/* 傳送帶 */}
       <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[80%] h-32 flex items-center justify-center z-10">
-        <Image src={conveyor} alt="conveyor" className="absolute w-full h-full object-contain z-[-1]" />
+        <Image src={conveyor} alt="conveyor" className="absolute w-full h-full object-fill z-[-1]" />
         <div
           className="absolute left-[180px] w-16 h-16 border-4 border-white rounded"
           style={{ transform: "translateX(-50%)" }}
@@ -190,15 +210,15 @@ export default function GamePage() {
         />
       ))}
 
-      {showComboText && (
+      {showComboText && combo > 0 && (
         <div className="absolute top-[30%] left-1/2 transform -translate-x-1/2 text-yellow-300 text-4xl font-extrabold animate-combo-glow z-50">
-          COMBO X {comboCount}
+          Combo X {combo}
         </div>
       )}
 
       {showMissText && (
         <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 text-red-500 text-3xl font-bold animate-miss-blink z-50">
-          MISS
+          Miss
         </div>
       )}
 
@@ -207,7 +227,7 @@ export default function GamePage() {
       </div>
 
       <button
-        onClick={() => updateState(0)}
+        onClick={reset}
         className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded z-20"
       >
         Quit

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import startImg2 from "@/../public/0.start/音樂預覽.png";
+import startImg from "@/../public/0.start/首頁.png";
 import skeletonImg from "@/../public/0.start/骷髏_白.png";
 import { useState, useEffect, useRef } from "react";
 import { useStore } from "@/app/store/store";
@@ -51,7 +52,7 @@ export default function MusicPreviewPage() {
 
     intervalRef.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= MAX_PREVIEW - 1) {
+        if (prev >= MAX_PREVIEW -1) {
           clearInterval(intervalRef.current);
           audioRef.current.pause();
           setIsPlaying(false);
@@ -80,11 +81,11 @@ export default function MusicPreviewPage() {
   return (
     <div
       className="w-screen h-screen bg-cover bg-center flex flex-col items-center justify-center"
-      style={{ backgroundImage: `url(${startImg2.src})` }}>
+      style={{ backgroundImage: `url(${startImg.src})` }}>
 
       <h2 className="text-3xl md:text-5xl text-white drop-shadow">MUSIC PREVIEW</h2>
 
-      <div className="flex flex-col gap-2 items-center mt-20">
+      <div className="flex flex-col gap-2 items-center mt-10">
         {/* 播放預覽按鈕 */}
         <button
           onClick={playPreview}
