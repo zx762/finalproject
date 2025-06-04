@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 const useStore = create((set) => ({
-  state: 0, // 0: start, 0.5: preview, 1: game, 2: result
+  state: 0,
   score: 0,
   maxCombo: 0,
   accuracy: 0,
@@ -11,8 +11,8 @@ const useStore = create((set) => ({
   updateScore: (score) => set(() => ({ score })),
   updateMaxCombo: (maxCombo) => set(() => ({ maxCombo })),
   updateAccuracy: (accuracy) => set(() => ({ accuracy })),
-  updateHits: (hits) => set(() => ({ hits })),
-  updateTotal: (total) => set(() => ({ total })),
+  updateHits: () => set((state) => ({ hits: state.hits + 1 })), // ✅ 改為增量函數
+  updateTotal: () => set((state) => ({ total: state.total + 1 })),
   reset: () =>
     set(() => ({
       state: 0,

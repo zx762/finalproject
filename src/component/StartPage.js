@@ -16,18 +16,20 @@ export default function StartPage() {
         fontFamily: "'Press Start 2P', monospace", // 套用像素字體
       }}
     >
-      <h1 className="text-white text-5xl md:text-2xl mb-8 drop-shadow-lg text-center">
+      <h1
+        className="text-white text-4xl md:text-8xl drop-shadow-lg text-center"
+      >
         SKULLBEAT
       </h1>
       <button
         onClick={() => updateState(1)}
-        className="bg-black text-white p-3 mb-4 rounded shadow-md hover:bg-gray-800 transition-all"
+        className="pixel-button mt-20"
       >
         Start
       </button>
       <button
         onClick={() => updateState(0.5)}
-        className="bg-black text-white p-3 rounded shadow-md hover:bg-gray-800 transition-all"
+        className="pixel-button mt-4"
       >
         Music Preview
       </button>

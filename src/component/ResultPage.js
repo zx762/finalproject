@@ -1,10 +1,14 @@
 "use client";
+
 import { useStore } from "@/app/store/store";
 import Image from "next/image";
 import startImg2 from "@/../public/0.start/音樂預覽.png";
 
 export default function ResultPage() {
-  const { score, maxCombo, accuracy, reset } = useStore();
+  const score = useStore((s) => s.score);
+  const maxCombo = useStore((s) => s.maxCombo);
+  const accuracy = useStore((s) => s.accuracy);
+  const reset = useStore((s) => s.reset);
 
   return (
     <div

@@ -41,7 +41,6 @@ export default function GamePage() {
     score,
     maxCombo,
     hits,
-    total,
     updateScore,
     updateMaxCombo,
     updateAccuracy,
@@ -63,8 +62,8 @@ export default function GamePage() {
 
   useEffect(() => {
     audioRef.current.play();
-  
-    const arrowTimers = chart.map((note, index) =>
+
+    const arrowTimers = chart.map((note) =>
       setTimeout(() => {
         const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
         const newArrow = {
@@ -72,19 +71,17 @@ export default function GamePage() {
           direction,
           left: window.innerWidth + 50,
         };
-  
+
         setArrows((prev) => [...prev, newArrow]);
-  
-        updateTotal(useStore.getState().total + 1);
+        updateTotal(); // ✅ 改為正確遞增
       }, note.time * 1000)
     );
-  
-    // 結束遊戲（最後一筆 + 0.3 秒緩衝）
+
     const endTime = chart[chart.length - 1].time + 0.3;
     const endTimer = setTimeout(() => {
       handleEnd();
     }, endTime * 1000);
-  
+
     return () => {
       arrowTimers.forEach(clearTimeout);
       clearTimeout(endTimer);
@@ -128,10 +125,9 @@ export default function GamePage() {
       );
 
       if (target) {
-        // 命中
         setArrows((prev) => prev.filter((a) => a.id !== target.id));
         updateScore(useStore.getState().score + 100);
-        updateHits(useStore.getState().hits + 1);
+        updateHits();
         const newCombo = combo + 1;
         setCombo(newCombo);
         setComboCount(newCombo);
@@ -141,7 +137,6 @@ export default function GamePage() {
         setShowComboText(true);
         setTimeout(() => setShowComboText(false), 500);
       } else {
-        // Miss
         setCombo(0);
         setComboCount(0);
         setShowMissText(true);
@@ -154,7 +149,8 @@ export default function GamePage() {
   }, [arrows, combo, maxCombo]);
 
   const handleEnd = () => {
-    const acc = Math.round((hits / total) * 100 || 0);
+    const { hits, total } = useStore.getState();
+    const acc = total === 0 ? 0 : Math.round((hits / total) * 100);
     updateAccuracy(acc);
     updateState(2);
   };

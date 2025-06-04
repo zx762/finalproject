@@ -11,6 +11,7 @@ const MAX_PREVIEW = 10; // 10秒
 export default function MusicPreviewPage() {
   const audioRef = useRef(null);
   const intervalRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   const [hasStarted, setHasStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,17 +24,33 @@ export default function MusicPreviewPage() {
   const updateState = useStore((state) => state.updateState);
 
   useEffect(() => {
-    audioRef.current = new Audio("/1.game/Remember Me.mp3");
-    audioRef.current.currentTime = 0;
+    const audio = new Audio("/1.game/Remember Me.mp3");
+    audioRef.current = audio;
+    audio.currentTime = 0;
 
+    // 清理用
     return () => {
+      clearInterval(intervalRef.current);
+      clearTimeout(timeoutRef.current);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
-      clearInterval(intervalRef.current);
     };
   }, []);
+
+  const stopPreview = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlaying(false);
+    setHasEnded(true);
+    setPlayDisabled(false);
+    clearInterval(intervalRef.current);
+    clearTimeout(timeoutRef.current);
+    setProgress(MAX_PREVIEW);
+    setCountdown(0);
+  };
 
   const playPreview = () => {
     if (!audioRef.current) return;
@@ -48,25 +65,23 @@ export default function MusicPreviewPage() {
     setProgress(0);
     setHasEnded(false);
 
-    intervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= MAX_PREVIEW - 1) {
-          clearInterval(intervalRef.current);
-          audioRef.current.pause();
-          setIsPlaying(false);
-          setHasEnded(true);
-          return MAX_PREVIEW;
-        }
-        return prev + 1;
-      });
+    clearInterval(intervalRef.current);
+    clearTimeout(timeoutRef.current);
 
-      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
+    intervalRef.current = setInterval(() => {
+      setProgress((prev) => Math.min(prev + 1, MAX_PREVIEW));
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
+
+    timeoutRef.current = setTimeout(() => {
+      stopPreview();
+    }, MAX_PREVIEW * 1000);
   };
 
   const replayPreview = () => {
     clearInterval(intervalRef.current);
-    setSkeletonKey((prev) => prev +1 );
+    clearTimeout(timeoutRef.current);
+    setSkeletonKey((prev) => prev + 1);
     playPreview();
   };
 
@@ -77,71 +92,62 @@ export default function MusicPreviewPage() {
   return (
     <div
       className="w-screen h-screen bg-cover bg-center flex flex-col items-center justify-center"
-      style={{ backgroundImage: `url(${startImg2.src})` }}>
+      style={{ backgroundImage: `url(${startImg2.src})` }}
+    >
+      <h2 className="text-3xl md:text-5xl text-white drop-shadow">MUSIC PREVIEW</h2>
 
-      <h2 className="text-2xl font-bold mb-4 text-white drop-shadow">MUSIC PREVIEW</h2>
-
-      <div className="flex flex-col gap-2 items-center">
+      <div className="flex flex-col gap-2 items-center mt-20">
         {/* 播放預覽按鈕 */}
         <button
           onClick={playPreview}
           disabled={playDisabled}
-          className={`px-4 py-2 rounded ${
-            playDisabled
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white"
-          }`}>
-
-          {hasEnded
-            ? "Preview Ended"
-            : isPlaying
-            ? `Playing：${countdown}s`
-            : "Play 10s Preview"}
+          className={`pixel-button ${
+            playDisabled ? "bg-gray-400 text-white cursor-not-allowed" : "bg-blue-500 text-white"
+          }`}
+        >
+          {hasEnded ? "Preview Ended" : isPlaying ? `Playing：${countdown}s` : "Play 10s Preview"}
         </button>
 
+        {/* 永遠顯示進度條與骷髏容器（預留空間） */}
+        <div className="relative mt-2 w-[300px] h-[60px] bg-transparent">
+          {/* 線條軌道 */}
+          <div
+            className={`absolute top-1/2 left-0 w-full h-[2px] transform -translate-y-1/2 transition-opacity duration-500 ${
+              hasStarted ? "bg-green-500 opacity-100" : "opacity-0"
+            }`}
+          />
 
-        {/* 細線進度條與骷髏 */}
-        {hasStarted && (
-        <div className="relative mt-12 w-[300px] h-[60px] bg-transparent">
-            {/* 線條軌道 */}
-            <div className="absolute top-1/2 left-0 w-full h-[2px] bg-green-500 transform -translate-y-1/2" />
-
-            {/* 骷髏站在線上跳舞／靜止 */}
-            <div
-                key={skeletonKey}
-                className={`absolute w-12 transition-opacity duration-500 ${
-                    isPlaying ? "preview-dance" : hasEnded ? "skeleton-still" : "hidden"
-                }`}
-                style={{
-                    left: `calc(${(progress / MAX_PREVIEW) * 100}% - 20px)`,
-                    bottom: "2px",
-                    transform: "translateY(0%)",
-                    transition: "left 1s linear",
-                }}
-                >
-                <Image src={skeletonImg} alt="Skeleton" />
-            </div>
+          {/* 骷髏 */}
+          <div
+            key={skeletonKey}
+            className={`absolute w-12 transition-opacity duration-500 ${
+              isPlaying
+                ? "preview-dance opacity-100"
+                : hasEnded
+                ? "skeleton-still opacity-50" // 變暗，改 opacity 比較明顯
+                : "opacity-0"
+            }`}
+            style={{
+              left: `calc(${(progress / MAX_PREVIEW) * 100}% - 20px)`,
+              bottom: "2px",
+              transform: "translateY(0%)",
+              transition: "left 1s linear",
+            }}
+          >
+            <Image src={skeletonImg} alt="Skeleton" />
+          </div>
         </div>
-        )}
 
         {/* 再聽一次 & 返回首頁 */}
         <div className="flex gap-4 mt-2">
-          <button
-            onClick={replayPreview}
-            className="bg-purple-500 text-white px-4 py-2 rounded"
-          >
+          <button onClick={replayPreview} className="pixel-button">
             Replay
           </button>
-          <button
-            onClick={goBack}
-            className="bg-gray-600 text-white px-4 py-2 rounded"
-          >
+          <button onClick={goBack} className="pixel-button">
             Home
           </button>
         </div>
       </div>
-
-      
     </div>
   );
 }
