@@ -66,26 +66,30 @@ export default function GamePage() {
 
   useEffect(() => {
     audioRef.current.play();
-
+  
+    let stopped = false;
+  
     const arrowTimers = chart.map((note) =>
       setTimeout(() => {
+        if (stopped) return;  // 如果已結束，不再產生箭頭
         const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
         const newArrow = {
           id: arrowIdRef.current++,
           direction,
           left: window.innerWidth + 50,
         };
-
+  
         setArrows((prev) => [...prev, newArrow]);
-        updateTotal(); // ✅ 改為正確遞增
+        updateTotal();
       }, note.time * 1000)
     );
-
+  
     const endTime = chart[chart.length - 1].time + 0.3;
     const endTimer = setTimeout(() => {
+      stopped = true; // 標記結束
       handleEnd();
     }, endTime * 1000);
-
+  
     return () => {
       arrowTimers.forEach(clearTimeout);
       clearTimeout(endTimer);
@@ -104,15 +108,21 @@ export default function GamePage() {
 
       setArrows((prev) => {
         const newArrows = [];
+        let missedThisFrame = false;  // 控制 miss 只顯示一次
+      
         for (const arrow of prev) {
           const newLeft = arrow.left - ARROW_SPEED * deltaTime;
-          if (newLeft <= -50) {
-            // ❌ 錯過箭頭
-            setCombo(0);
-            setComboCount(0);
-            updateMisses();
-            setShowMissText(true);
-            setTimeout(() => setShowMissText(false), 300);
+      
+          if (newLeft <= HIT_ZONE_X) {
+            // 箭頭超過打擊區視為 miss
+            if (!missedThisFrame) {
+              setCombo(0);
+              setComboCount(0);
+              updateMisses();
+              setShowMissText(true);
+              setTimeout(() => setShowMissText(false), 300);
+              missedThisFrame = true; // 本次動畫幀只觸發一次 miss 提示
+            }
             continue; // 不保留這個箭頭（被移除）
           }
           newArrows.push({ ...arrow, left: newLeft });
