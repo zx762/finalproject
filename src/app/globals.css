@@ -93,7 +93,6 @@
 }
 
 .pixel-button {
-  background-color: #ffcc00; /* 黃色背景 */
   color: black;
   border: 4px solid black;
   box-shadow: 4px 4px 0 #000;
@@ -114,6 +113,33 @@
   transform: translateY(2px);
   box-shadow: 2px 2px 0 #000;
 }
+
+@keyframes moveSkeleton {
+  from {
+    left: 0%;
+  }
+  to {
+    left: calc(100% - 48px);
+  }
+}
+
+.move-skeleton {
+  animation: moveSkeleton 10s linear forwards;
+}
+
+.skeleton-still {
+  animation: none !important;
+  opacity: 0.5;
+}
+
+.skeleton-static {
+  animation: none !important;
+}
+
+.pixel-button:disabled {
+  cursor: not-allowed !important;
+}
+
 
 body {
   background: var(--background);

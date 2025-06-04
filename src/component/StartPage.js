@@ -23,13 +23,13 @@ export default function StartPage() {
       </h1>
       <button
         onClick={() => updateState(1)}
-        className="pixel-button mt-20"
+        className="pixel-button mt-20 bg-[#ffcc00]"
       >
         Start
       </button>
       <button
         onClick={() => updateState(0.5)}
-        className="pixel-button mt-4"
+        className="pixel-button mt-4 bg-[#ffcc00]"
       >
         Music Preview
       </button>
