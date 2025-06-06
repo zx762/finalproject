@@ -6,10 +6,10 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/app/store/store";
 
 const lines = [
-    "1. Use arrow keys (⇧ ⇩ ⇦ ⇨) to play",
+    "1. Dance with the arrow keys (⇧ ⇩ ⇦ ⇨)",
     "2. Hit notes in the glowing zone",
-    "3. Each combo = 100 points",
-    "4. Song lasts about 40 seconds",
+    "3. Each combo hit= 100 points",
+    "4. Stay sharp — 60% accuracy to survive!",
   ];
 
 

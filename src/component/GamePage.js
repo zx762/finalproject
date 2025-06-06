@@ -11,7 +11,8 @@ import arrowUp from "@/../public/1.game/黃上.png";
 import arrowDown from "@/../public/1.game/綠下.png";
 import arrowLeft from "@/../public/1.game/紅左.png";
 import arrowRight from "@/../public/1.game/紫右.png";
-import conveyor from "@/../public/1.game/傳送帶.png";
+import conveyor from "@/../public/1.game/傳送帶1.png";
+import bomb from "@/../public/1.game/bomb.png";
 
 const ARROW_IMAGES = {
   ArrowUp: arrowUp,
@@ -22,7 +23,7 @@ const ARROW_IMAGES = {
 
 const DIRECTIONS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
 const ARROW_SPEED = 200;
-const HIT_ZONE_X = 180;
+const HIT_ZONE_X = 350;
 
 const chart = [
   { time: 0.5 }, { time: 1.1 }, { time: 1.9 }, { time: 2.4 }, { time: 3.0 },
@@ -113,17 +114,19 @@ export default function GamePage() {
         for (const arrow of prev) {
           const newLeft = arrow.left - ARROW_SPEED * deltaTime;
       
-          if (newLeft <= HIT_ZONE_X) {
-            // 箭頭超過打擊區視為 miss
+          if (newLeft < HIT_ZONE_X - 40 && !arrow.missed) {
+            // 第一次錯過才觸發 miss，但仍保留箭頭
             if (!missedThisFrame) {
               setCombo(0);
               setComboCount(0);
               updateMisses();
               setShowMissText(true);
               setTimeout(() => setShowMissText(false), 300);
-              missedThisFrame = true; // 本次動畫幀只觸發一次 miss 提示
+              missedThisFrame = true;
             }
-            continue; // 不保留這個箭頭（被移除）
+            // 標記此箭頭已錯過，不重複 miss 判定
+            newArrows.push({ ...arrow, left: newLeft, missed: true });
+            continue;
           }
           newArrows.push({ ...arrow, left: newLeft });
         }
@@ -195,20 +198,25 @@ export default function GamePage() {
       <Image src={backgroundImg2} alt="bg" className="absolute w-full h-full object-cover z-0" />
 
       {/* 傳送帶 */}
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[80%] h-32 flex items-center justify-center z-10">
-        <Image src={conveyor} alt="conveyor" className="absolute w-full h-full object-fill z-[-1]" />
-        <div
-          className="absolute left-[180px] w-16 h-16 border-4 border-white rounded"
-          style={{ transform: "translateX(-50%)" }}
+      <div className="absolute bottom-20 left-[100px] w-[1700px] h-32 flex items-center justify-start z-10">
+        {/* 傳送帶圖片改為 fill 模式 */}
+        <Image
+          src={conveyor}
+          alt="conveyor"
+          fill
+          className="object-fill z-[-1]"
         />
+
+        {/* 打擊區 */}
+        <div className="absolute left-[240px] w-22 h-20 border-4 border-white rounded" />
       </div>
 
       {/* 骷髏角色 */}
-      <div className="absolute bottom-56 left-[100px] z-10">
+      <div className="absolute bottom-42 left-[290px] z-10">
         <Image
           src={subjectImg}
           alt="skeleton"
-          className={`w-[180px] h-auto transition-all duration-100 ${
+          className={`w-[220px] h-auto transition-all duration-100 ${
             skeletonJump ? "jump-dance" : ""
           }`}
         />
@@ -220,7 +228,7 @@ export default function GamePage() {
           key={arrow.id}
           src={ARROW_IMAGES[arrow.direction]}
           alt={arrow.direction}
-          className="w-14 h-14 absolute bottom-[140px] z-20"
+          className="w-14 h-14 absolute bottom-[120px] z-20"
           style={{ left: `${arrow.left}px` }}
         />
       ))}
