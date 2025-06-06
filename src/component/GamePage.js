@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/app/store/store";
 
 import backgroundImg from "@/../public/1.game/BACKGROUND.png";
-import backgroundImg2 from "@/../public/1.game/背景新.png";
+import backgroundImg2 from "@/../public/1.game/背景新2.png";
 import subjectImg from "@/../public/1.game/SUBJECT.png";
 import arrowUp from "@/../public/1.game/黃上.png";
 import arrowDown from "@/../public/1.game/綠下.png";
@@ -182,7 +182,12 @@ export default function GamePage() {
     const { hits, total } = useStore.getState();
     const acc = total === 0 ? 0 : Math.round((hits / total) * 100);
     updateAccuracy(acc);
-    updateState(2);
+  
+    if (acc < 60) {
+      updateState(3); // FailedPage
+    } else {
+      updateState(2); // ResultPage
+    }
   };
 
   return (

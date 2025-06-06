@@ -7,6 +7,7 @@ import GamePage from "@/component/GamePage";
 import ResultPage from "@/component/ResultPage";
 import { useState } from "react";
 import {useStore} from "@/app/store/store";
+import FailedPage from "@/component/FailedPage";
 
 export default function Skullbeat() {
 
@@ -21,6 +22,7 @@ export default function Skullbeat() {
             { gameState.state == 0.75 && <HowPage />}
             { gameState.state == 1 && <GamePage/>}
             { gameState.state == 2 && <ResultPage />}
+            { gameState.state == 3 && <FailedPage />}
 
         </div>
         
