@@ -33,8 +33,8 @@ const chart = [
   { time: 15.1 }, { time: 15.9 }, { time: 16.6 }, { time: 17.3 }, { time: 17.9 },
   { time: 19.0 }, { time: 19.6 }, { time: 20.3 }, { time: 21.2 }, { time: 21.8 },
   { time: 23.0 }, { time: 23.6 }, { time: 24.4 }, { time: 25.2 }, { time: 25.9 },
-  { time: 27.0 }, { time: 28.1 }, { time: 29.0 }, { time: 30.0 }, { time: 31.0 },
-  { time: 32.5 }, { time: 34.0 }, { time: 35.5 },
+  { time: 27.0 }, { time: 28.1 }, { time: 28.7 }, { time: 29.7 }, { time: 30.7 }, { time: 31.3 },
+  { time: 32.3 }, { time: 33.0 }, { time: 34.2 }, { time: 35.0 },
 ];
 
 export default function GamePage() {
@@ -65,37 +65,23 @@ export default function GamePage() {
   const audioRef = useRef(null);
   const reset = useStore((s) => s.reset);
 
+  const [countdown, setCountdown] = useState(3);
+  const [gameStarted, setGameStarted] = useState(false);
+
   useEffect(() => {
-    audioRef.current.play();
-  
-    let stopped = false;
-  
-    const arrowTimers = chart.map((note) =>
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (countdown === 0 && !gameStarted) {
+      setGameStarted(true);
       setTimeout(() => {
-        if (stopped) return;  // 如果已結束，不再產生箭頭
-        const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
-        const newArrow = {
-          id: arrowIdRef.current++,
-          direction,
-          left: window.innerWidth + 50,
-        };
-  
-        setArrows((prev) => [...prev, newArrow]);
-        updateTotal();
-      }, note.time * 1000)
-    );
-  
-    const endTime = chart[chart.length - 1].time + 0.3;
-    const endTimer = setTimeout(() => {
-      stopped = true; // 標記結束
-      handleEnd();
-    }, endTime * 1000);
-  
-    return () => {
-      arrowTimers.forEach(clearTimeout);
-      clearTimeout(endTimer);
-    };
-  }, []);
+        startArrowTimers(); // ⏱ 倒數結束後 0.5 秒再開始箭頭與音樂
+      }, 500);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   useEffect(() => {
     const animate = (time) => {
@@ -109,27 +95,25 @@ export default function GamePage() {
 
       setArrows((prev) => {
         const newArrows = [];
-        let missedThisFrame = false;  // 控制 miss 只顯示一次
       
         for (const arrow of prev) {
           const newLeft = arrow.left - ARROW_SPEED * deltaTime;
       
           if (newLeft < HIT_ZONE_X - 40 && !arrow.missed) {
-            // 第一次錯過才觸發 miss，但仍保留箭頭
-            if (!missedThisFrame) {
-              setCombo(0);
-              setComboCount(0);
-              updateMisses();
-              setShowMissText(true);
-              setTimeout(() => setShowMissText(false), 300);
-              missedThisFrame = true;
-            }
-            // 標記此箭頭已錯過，不重複 miss 判定
+            setCombo(0);
+            setComboCount(0);
+            updateMisses();
+            setShowMissText(true);
+            setTimeout(() => setShowMissText(false), 300);
+      
             newArrows.push({ ...arrow, left: newLeft, missed: true });
             continue;
           }
+      
+          if (newLeft < -100) continue; // 完全離開畫面就不保留
           newArrows.push({ ...arrow, left: newLeft });
         }
+      
         return newArrows;
       });
 
@@ -191,6 +175,49 @@ export default function GamePage() {
     } else {
       updateState(2); // ResultPage
     }
+  };
+
+  const startArrowTimers = () => {
+    const leadTime = 3.5; // 提前時間（秒）
+    const audioDuration = 38.5; // 你的音樂實際長度（建議確認）
+  
+    const maxChartTime = audioDuration + leadTime;
+  
+    let stopped = false;
+  
+    const arrowTimers = chart.map((note) => {
+      // ✅ 排除音樂還沒開始就應該出現的箭頭（會重疊）
+      const delay = (note.time - leadTime) * 1000;
+      if (delay < 0) return null;
+    
+      return setTimeout(() => {
+        if (stopped) return;
+        const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
+        const newArrow = {
+          id: arrowIdRef.current++,
+          direction,
+          left: window.innerWidth + 50,
+        };
+        setArrows((prev) => [...prev, newArrow]);
+        updateTotal();
+      }, delay);
+    });
+  
+    const audioTimer = setTimeout(() => {
+      audioRef.current.play();
+    }, leadTime * 1000);
+  
+    // ✅ endTimer 改成根據 audioDuration，不是 chart
+    const endTimer = setTimeout(() => {
+      stopped = true;
+      handleEnd();
+    }, (audioDuration + 0.2) * 1000);
+  
+    return () => {
+      arrowTimers.forEach((timer) => timer && clearTimeout(timer));
+      clearTimeout(audioTimer);
+      clearTimeout(endTimer);
+    };
   };
 
   return (
@@ -257,6 +284,15 @@ export default function GamePage() {
       </button>
 
       <audio ref={audioRef} src="/1.game/Remember Me.mp3" />
+
+      {countdown > 0 && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="text-white text-7xl font-extrabold animate-scale-pop">
+            {countdown}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
