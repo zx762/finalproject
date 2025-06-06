@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import startImg2 from "@/../public/0.start/音樂預覽.png";
 import startImg from "@/../public/0.start/首頁.png";
 import skeletonImg from "@/../public/0.start/骷髏_白.png";
+import volumeImg from "@/../public/0.start/volume.png";
 import { useState, useEffect, useRef } from "react";
 import { useStore } from "@/app/store/store";
 
@@ -24,10 +24,13 @@ export default function MusicPreviewPage() {
 
   const updateState = useStore((state) => state.updateState);
 
+  const [volumeLevel, setVolumeLevel] = useState(0.5); // 0~1 音量
+
   useEffect(() => {
     audioRef.current = new Audio("/1.game/Remember Me.mp3");
     audioRef.current.currentTime = 0;
-
+    audioRef.current.volume = volumeLevel;
+  
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -78,10 +81,58 @@ export default function MusicPreviewPage() {
     updateState(0);
   };
 
+  const handleVolumeChange = (e) => {
+    const value = parseFloat(e.target.value);
+    setVolumeLevel(value);
+    if (audioRef.current) {
+      audioRef.current.volume = value;
+    }
+  };
+
   return (
     <div
       className="w-screen h-screen bg-cover bg-center flex flex-col items-center justify-center"
       style={{ backgroundImage: `url(${startImg.src})` }}>
+
+      {/* 放在 return 中、最外層 div 裡面（建議放左上角） */}
+      <div
+        className="absolute top-4 left-4 flex items-center gap-2 group z-50"
+      >
+        {/* 音量圖示 */}
+        <Image
+          src={volumeImg}
+          alt="Volume"
+          className="w-6 h-6 opacity-50 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+        />
+
+        {/* 音量滑桿 */}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volumeLevel}
+          onChange={(e) => {
+            const value = parseFloat(e.target.value);
+            setVolumeLevel(value);
+            if (audioRef.current) {
+              audioRef.current.volume = value;
+            }
+          }}
+          className={`
+            hidden group-hover:block transition-all duration-300 
+            w-24 h-1 appearance-none bg-gray-800 rounded-full
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:w-4
+            [&::-webkit-slider-thumb]:h-4
+            [&::-webkit-slider-thumb]:bg-yellow-400
+            [&::-webkit-slider-thumb]:rounded-full
+            [&::-webkit-slider-thumb]:shadow-md
+            [&::-moz-range-thumb]:bg-yellow-400
+            [&::-moz-range-thumb]:border-none
+          `}
+        />
+      </div>
 
       <h2 className="text-3xl md:text-5xl text-white drop-shadow">MUSIC PREVIEW</h2>
 
