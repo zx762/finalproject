@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/app/store/store";
 
-import backgroundImg from "@/../public/1.game/BACKGROUND.png";
 import backgroundImg2 from "@/../public/1.game/背景新2.png";
 import subjectImg from "@/../public/1.game/SUBJECT.png";
 import arrowUp from "@/../public/1.game/黃上.png";
