@@ -7,8 +7,8 @@ import { useStore } from "@/app/store/store";
 
 const lines = [
     "1. Dance with the arrow keys (⇧ ⇩ ⇦ ⇨)",
-    "2. Hit notes in the glowing zone",
-    "3. Each combo hit= 100 points",
+    "2. Hit notes in the glowing zone — don’t miss!",
+    "3. Avoid bombs — pressing keys on bombs means game over",
     "4. Stay sharp — 60% accuracy to survive!",
   ];
 

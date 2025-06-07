@@ -12,7 +12,7 @@ import arrowDown from "@/../public/1.game/綠下.png";
 import arrowLeft from "@/../public/1.game/紅左.png";
 import arrowRight from "@/../public/1.game/紫右.png";
 import conveyor from "@/../public/1.game/傳送帶1.png";
-import bomb from "@/../public/1.game/bomb.png";
+import bombImg from "@/../public/1.game/bomb.png";
 
 const ARROW_IMAGES = {
   ArrowUp: arrowUp,
@@ -67,6 +67,9 @@ export default function GamePage() {
 
   const [countdown, setCountdown] = useState(3);
   const [gameStarted, setGameStarted] = useState(false);
+  const [bombs, setBombs] = useState([]);
+  const [isGameOver, setGameOver] = useState(false);
+  const [gameState, setGameState] = useState(1); // 預設為遊戲頁
 
   useEffect(() => {
     let timer;
@@ -117,6 +120,18 @@ export default function GamePage() {
         return newArrows;
       });
 
+      setBombs((prev) => {
+        const newBombs = [];
+      
+        for (const bomb of prev) {
+          const newLeft = bomb.left - ARROW_SPEED * deltaTime;
+          if (newLeft < -100) continue;
+          newBombs.push({ ...bomb, left: newLeft });
+        }
+      
+        return newBombs;
+      });
+
       requestRef.current = requestAnimationFrame(animate);
     };
 
@@ -127,27 +142,38 @@ export default function GamePage() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!DIRECTIONS.includes(e.key)) return;
-  
+    
+      const isBombHit = bombs.some(
+        (bomb) => Math.abs(bomb.left - HIT_ZONE_X) < 40
+      );
+      
+      if (isBombHit) {
+        setGameOver(true);
+        updateState(3);
+        audioRef.current?.pause();
+        return;
+      }
+    
       const target = arrows.find(
         (arrow) =>
           arrow.direction === e.key &&
           Math.abs(arrow.left - HIT_ZONE_X) < 40
       );
-  
+    
       if (target) {
         setArrows((prev) => prev.filter((a) => a.id !== target.id));
         updateScore(useStore.getState().score + 100);
         updateHits();
-  
+    
         const newCombo = combo + 1;
         setCombo(newCombo);
         setComboCount(newCombo);
-  
+    
         if (newCombo > maxCombo) updateMaxCombo(newCombo);
-  
+    
         setSkeletonJump(true);
         setTimeout(() => setSkeletonJump(false), 200);
-  
+    
         if (newCombo > 0) {
           setShowComboText(true);
           setTimeout(() => setShowComboText(false), 500);
@@ -170,7 +196,7 @@ export default function GamePage() {
     const acc = total === 0 ? 0 : Math.round((hits / total) * 100);
     updateAccuracy(acc);
   
-    if (acc < 60) {
+    if (!isGameOver && acc < 60) {
       updateState(3); // FailedPage
     } else {
       updateState(2); // ResultPage
@@ -179,17 +205,13 @@ export default function GamePage() {
 
   const startArrowTimers = () => {
     const leadTime = 3.5; // 提前時間（秒）
-    const audioDuration = 38.5; // 你的音樂實際長度（建議確認）
-  
-    const maxChartTime = audioDuration + leadTime;
+    const audioDuration = 38.5;
   
     let stopped = false;
   
     const arrowTimers = chart.map((note) => {
-      // ✅ 排除音樂還沒開始就應該出現的箭頭（會重疊）
       const delay = (note.time - leadTime) * 1000;
       if (delay < 0) return null;
-    
       return setTimeout(() => {
         if (stopped) return;
         const direction = DIRECTIONS[Math.floor(Math.random() * 4)];
@@ -203,11 +225,39 @@ export default function GamePage() {
       }, delay);
     });
   
+    // 保證產生 1～3 顆炸彈
+    const bombCount = Math.floor(Math.random() * 3) + 1;
+    const selectedBombTimes = [];
+  
+    while (selectedBombTimes.length < bombCount) {
+      const randomTime = Math.random() * (audioDuration - 6) + 3; // 避開最前與最後幾秒
+  
+      // 確保此時間點與所有 note 時間差 > 0.5 秒
+      const isFarFromNotes = chart.every(note => Math.abs(note.time - randomTime) > 0.5);
+      const isFarFromOtherBombs = selectedBombTimes.every(t => Math.abs(t - randomTime) > 1); // 炸彈間距至少 1 秒
+  
+      if (isFarFromNotes && isFarFromOtherBombs) {
+        selectedBombTimes.push(randomTime);
+      }
+    }
+  
+    selectedBombTimes.forEach((bombTime) => {
+      const delay = (bombTime - leadTime) * 1000;
+      if (delay < 0) return; // 若時間早於開始，忽略
+  
+      setTimeout(() => {
+        const newBomb = {
+          id: arrowIdRef.current++,
+          left: window.innerWidth + 50,
+        };
+        setBombs((prev) => [...prev, newBomb]);
+      }, delay);
+    });
+  
     const audioTimer = setTimeout(() => {
       audioRef.current.play();
     }, leadTime * 1000);
   
-    // ✅ endTimer 改成根據 audioDuration，不是 chart
     const endTimer = setTimeout(() => {
       stopped = true;
       handleEnd();
@@ -219,6 +269,12 @@ export default function GamePage() {
       clearTimeout(endTimer);
     };
   };
+
+  useEffect(() => {
+    if (gameState === 0) {
+      setGameOver(false);
+    }
+  }, [gameState]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
@@ -237,6 +293,16 @@ export default function GamePage() {
         {/* 打擊區 */}
         <div className="absolute left-[240px] w-22 h-20 border-4 border-white rounded" />
       </div>
+
+      {bombs.map((bomb) => (
+        <Image
+          key={bomb.id}
+          src={bombImg}
+          alt="bomb"
+          className="w-14 h-14 absolute bottom-[120px] z-20"
+          style={{ left: `${bomb.left}px` }}
+        />
+      ))}
 
       {/* 骷髏角色 */}
       <div className="absolute bottom-42 left-[290px] z-10">
