@@ -2,7 +2,6 @@
 
 import { useStore } from "@/app/store/store";
 import Image from "next/image";
-import startImg2 from "@/../public/0.start/音樂預覽.png";
 import startImg from "@/../public/0.start/首頁.png";
 
 export default function ResultPage() {

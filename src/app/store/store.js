@@ -17,6 +17,9 @@ const useStore = create((set) => ({
   updateTotal: () => set((state) => ({ total: state.total + 1 })),
   updateMisses: () => set((state) => ({ misses: state.misses + 1 })), // ✅ 新增
 
+  isGameOver: false,
+  setGameOver: (value) => set({ isGameOver: value }),
+
   reset: () =>
     set(() => ({
       state: 0,
