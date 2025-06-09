@@ -70,7 +70,8 @@ export default function GamePage() {
   const [isGameOver, setGameOver] = useState(false);
   const [gameState, setGameState] = useState(1); // 預設為遊戲頁
 
-  const bombHitRef = useRef(false); // 1️⃣ 新增在最上方的 useRef 定義區域
+  const gameResult = useStore((state) => state.gameResult);
+  const setGameResult = useStore((state) => state.setGameResult);
 
   useEffect(() => {
     let timer;
@@ -143,37 +144,45 @@ export default function GamePage() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!DIRECTIONS.includes(e.key)) return;
-      if (bombHitRef.current) return; // 已經結束就不要再判斷
-    
-      const isBombHit = bombs.some(
-        (bomb) => Math.abs(bomb.left - HIT_ZONE_X) < 30 // 範圍可調整
-      );
+  
+      // 炸彈命中判定
+      const isBombHit = useStore.getState().isGameOver
+      ? false
+      : bombs.some((bomb) => Math.abs(bomb.left - HIT_ZONE_X) < 40);
+
       if (isBombHit) {
-        bombHitRef.current = true;
-        handleEnd(true);
+        const { hits, total } = useStore.getState();
+        const acc = total === 0 ? 0 : Math.round((hits / total) * 100);
+
+        updateAccuracy(acc);
+        setGameResult("fail");
+        updateState(3); // FailedPage
+        setGameOver(true);
+        audioRef.current?.pause();
         return;
       }
-      
+        
+      // 正常箭頭處理邏輯
       const target = arrows.find(
         (arrow) =>
           arrow.direction === e.key &&
           Math.abs(arrow.left - HIT_ZONE_X) < 40
       );
-    
+  
       if (target) {
         setArrows((prev) => prev.filter((a) => a.id !== target.id));
         updateScore(useStore.getState().score + 100);
         updateHits();
-    
+  
         const newCombo = combo + 1;
         setCombo(newCombo);
         setComboCount(newCombo);
-    
+  
         if (newCombo > maxCombo) updateMaxCombo(newCombo);
-    
+  
         setSkeletonJump(true);
         setTimeout(() => setSkeletonJump(false), 200);
-    
+  
         if (newCombo > 0) {
           setShowComboText(true);
           setTimeout(() => setShowComboText(false), 500);
@@ -189,18 +198,25 @@ export default function GamePage() {
   
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [arrows, combo, maxCombo]);
+  }, [arrows, combo, maxCombo, bombs]);
 
-  const handleEnd = (forceFail = false) => {
-    const { hits, total } = useStore.getState();
+  const handleEnd = () => {
+    const { hits, total, gameResult } = useStore.getState();
+  
+    if (gameResult === "fail") return; // 玩家已爆炸不再判斷
+  
     const acc = total === 0 ? 0 : Math.round((hits / total) * 100);
     updateAccuracy(acc);
   
-    if (forceFail || bombHitRef.current || acc < 60) {
-      updateState(3); // FailedPage
+    if (acc < 60) {
+      setGameResult("fail");
+      updateState(4); // FailedPage1
     } else {
+      setGameResult("success");
       updateState(2); // ResultPage
     }
+  
+    setGameOver(true);
   };
 
   const startArrowTimers = () => {
@@ -271,18 +287,11 @@ export default function GamePage() {
   };
 
   useEffect(() => {
-    if (gameState === 1) {
+    if (gameState === 0) {
       setGameOver(false);
-      bombHitRef.current = false; // ✅ 重設炸彈命中狀態
     }
   }, [gameState]);
 
-  // 修改 reset 函式，讓它同時切回首頁
-  const handleQuit = () => {
-    reset();           // 重置遊戲狀態
-    updateState(0);    // 切換回首頁 (startpage)
-  };
-  
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
       <Image src={backgroundImg2} alt="bg" className="absolute w-full h-full object-cover z-0" />
@@ -329,43 +338,43 @@ export default function GamePage() {
           src={ARROW_IMAGES[arrow.direction]}
           alt={arrow.direction}
           className="w-14 h-14 absolute bottom-[120px] z-20"
-          style={{ left:  `${arrow.left}px` }}
-          />
-        ))}
-  
-        {showComboText && combo > 0 && (
-          <div className="absolute top-[30%] left-1/2 transform -translate-x-1/2 text-yellow-300 text-4xl font-extrabold animate-combo-glow z-50">
-            Combo X {combo}
-          </div>
-        )}
-  
-        {showMissText && (
-          <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 text-red-500 text-3xl font-bold animate-miss-blink z-50">
-            Miss
-          </div>
-        )}
-  
-        <div className="absolute top-6 left-6 text-white text-xl z-20">
-          Score：{score}
+          style={{ left: `${arrow.left}px` }}
+        />
+      ))}
+
+      {showComboText && combo > 0 && (
+        <div className="absolute top-[30%] left-1/2 transform -translate-x-1/2 text-yellow-300 text-4xl font-extrabold animate-combo-glow z-50">
+          Combo X {combo}
         </div>
+      )}
+
+      {showMissText && (
+        <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 text-red-500 text-3xl font-bold animate-miss-blink z-50">
+           Miss
+        </div>
+      )}
   
-        <button
-          onClick={handleQuit}
-          className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded z-20"
-        >
-          Quit
-        </button>
-  
-        <audio ref={audioRef} src="/1.game/Remember Me.mp3" />
-  
-        {countdown > 0 && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="text-white text-7xl font-extrabold animate-scale-pop">
-              {countdown}
-            </div>
-          </div>
-        )}
-  
+      <div className="absolute top-6 left-6 text-white text-xl z-20">
+        Score：{score}
       </div>
-    );
-  }
+  
+      <button
+        onClick={reset}
+        className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded z-20"
+      >
+        Quit
+      </button>
+  
+      <audio ref={audioRef} src="/1.game/Remember Me.mp3" />
+  
+      {countdown > 0 && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="text-white text-7xl font-extrabold animate-scale-pop">
+            {countdown}
+          </div>
+        </div>
+      )}
+  
+    </div>
+  );
+}

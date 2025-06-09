@@ -8,6 +8,7 @@ const useStore = create((set) => ({
   hits: 0,
   total: 0,
   misses: 0, // ✅ 加入 Miss 計數
+  gameResult: 0,
 
   updateState: (newState) => set(() => ({ state: newState })),
   updateScore: (score) => set(() => ({ score })),
@@ -16,6 +17,7 @@ const useStore = create((set) => ({
   updateHits: () => set((state) => ({ hits: state.hits + 1 })),
   updateTotal: () => set((state) => ({ total: state.total + 1 })),
   updateMisses: () => set((state) => ({ misses: state.misses + 1 })), // ✅ 新增
+  setGameResult: (result) => set({ gameResult: result }),
 
   isGameOver: false,
   setGameOver: (value) => set({ isGameOver: value }),

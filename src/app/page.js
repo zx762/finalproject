@@ -8,6 +8,7 @@ import ResultPage from "@/component/ResultPage";
 import { useState } from "react";
 import {useStore} from "@/app/store/store";
 import FailedPage from "@/component/FailedPage";
+import HitPage from "@/component/HitPage";
 
 export default function Home() {
 
@@ -22,7 +23,8 @@ export default function Home() {
             { gameState.state == 0.75 && <HowPage />}
             { gameState.state == 1 && <GamePage/>}
             { gameState.state == 2 && <ResultPage />}
-            { gameState.state == 3 && <FailedPage />}
+            { gameState.state == 3 && <HitPage />}
+            { gameState.state == 4 && <FailedPage />}
 
         </div>
         

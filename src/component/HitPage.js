@@ -20,7 +20,7 @@ export default function FailedPage() {
       <div className="text-2xl text-center space-y-3 mt-20">
         <p className="text-white">Score：{score}</p>
         <p className="text-white">Max Combo：{maxCombo}</p>
-        <p className=" text-red-700">Accuracy：{accuracy}%</p>
+        <p className=" text-red-700">You hit the bomb...</p>
       </div>
 
       <div className="flex gap-4 mt-2 ">
